@@ -1,0 +1,19 @@
+{
+  "name": "wrinkly",
+  "version": "1.0.0",
+  "description": "quiz app",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "dev": "node server.js"
+  },
+  "author": "Jeffery Young",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  }
+}
