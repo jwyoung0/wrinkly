@@ -10,9 +10,9 @@ const PORT = process.env.PORT || 3000; // Port 3000 or render default Port
 
 const pool = new Pool({
     connectionString: process.env.DB_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    // ssl: {
+    //     rejectUnauthorized: false
+    // }
 });
 
 app.use(cors());
