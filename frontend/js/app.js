@@ -37,7 +37,7 @@ registerBtn.addEventListener("click", function () {
     sendAuthRequest("/api/register");
 });
 
-loginBtn.addEventListener("click", function () {
+loginBtn.addEventListener("click", async function () {
     const success = await sendAuthRequest("/api/login");
 
     if (success) {
