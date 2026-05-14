@@ -8,11 +8,17 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3000; // Port 3000 or render default Port
 
+//debug database connection check.
+if (!process.env.DB_URL) {
+    console.error("Missing DB_URL environment variable");
+    process.exit(1);
+}
+
 const pool = new Pool({
     connectionString: process.env.DB_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    // }
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 app.use(cors());
