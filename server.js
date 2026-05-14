@@ -4,6 +4,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+const session = require("express-session");
 
 const app = express();
 const PORT = process.env.PORT || 3000; // Port 3000 or render default Port
@@ -28,6 +29,17 @@ app.use(express.json());
 
 //Starting point
 app.use(express.static("frontend"));
+
+//Session Middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: false
+    }
+}));
 
 // // Test route
 // app.get("/", function (req, res) {
@@ -121,12 +133,14 @@ app.post("/api/login", async function (req, res) {
             });
         }
 
+        req.session.user = {
+            id: user.id,
+            username: user.username
+        };
+
         res.json({
             message: "Login successful",
-            user: {
-                id: user.id,
-                username: user.username
-            }
+            user: req.session.user
         });
     } catch (error) {
         console.error(error);
@@ -134,6 +148,33 @@ app.post("/api/login", async function (req, res) {
             message: "Login failed"
         });
     }
+});
+
+app.get("api/me", function (req, res) {
+    if (!req.session.user) {
+        return res.status(401).json({
+            message: "Not logged in"
+        });
+    }
+
+    res.json({
+        user: req.session.user
+    });
+});
+
+app.post("/api/logout", function (req, res) {
+    req.session.destroy(function (error) {
+        if (error) {
+            return res.status(500).json({
+                message: "Logout failed"
+            });
+        }
+
+        res.clearCookie("connect.sid");
+        res.json({
+            message: "Logged out"
+        });
+    });
 });
 
 app.listen(PORT, function () {
