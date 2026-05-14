@@ -6,7 +6,7 @@ const bcrypt = require("bcrypt");
 const cors = require("cors");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // Port 3000 or render default Port
 
 const pool = new Pool({
     connectionString: process.env.DB_URL,
@@ -20,10 +20,13 @@ app.use(cors());
 app.use(express.json());
 
 
-// Test route
-app.get("/", function (req, res) {
-    res.send("Backend is running");
-});
+//Starting point
+app.use(express.static("frontend"));
+
+// // Test route
+// app.get("/", function (req, res) {
+//     res.send("Backend is running");
+// });
 
 // Example API route
 app.get("/api/health", function (req, res) {
