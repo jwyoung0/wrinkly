@@ -24,10 +24,11 @@ async function sendAuthRequest(endpoint) {
 
     if (!response.ok) {
         message.textContent = data.message || "Something went wrong";
-        return;
+        return false;
     }
 
     message.textContent = data.message;
+    return true;
 }
 
 
@@ -37,5 +38,9 @@ registerBtn.addEventListener("click", function () {
 });
 
 loginBtn.addEventListener("click", function () {
-    sendAuthRequest("/api/login");
+    const success = await sendAuthRequest("/api/login");
+
+    if (success) {
+        window.location.href = "pages/dashboard.html";
+    }
 });

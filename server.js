@@ -150,7 +150,7 @@ app.post("/api/login", async function (req, res) {
     }
 });
 
-app.get("api/me", function (req, res) {
+app.get("/api/me", function (req, res) {
     if (!req.session.user) {
         return res.status(401).json({
             message: "Not logged in"
