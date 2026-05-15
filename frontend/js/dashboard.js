@@ -1,3 +1,13 @@
+const logoutBtn = document.getElementById("logoutBtn");
+
+logoutBtn.addEventListener("click", async function () {
+    await fetch("/api/logout", {
+        method: "POST"
+    });
+
+    window.location.href = "../index.html";
+});
+
 async function checkLogin() {
     const response = await fetch("/api/me");
     const data = await response.json();
@@ -11,14 +21,3 @@ async function checkLogin() {
 }
 
 checkLogin();
-
-const logoutBtn = document.getElementById("logoutBtn");
-
-logoutBtn.addEventListener("click", async function () {
-    await fetch("/api/logout", {
-        method: "POST"
-    });
-
-    window.location.href = "../index.html";
-});
-
