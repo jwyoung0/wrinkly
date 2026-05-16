@@ -11,10 +11,19 @@ body {
   min-height: 100vh;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
   line-height: 1.6;
+}
+
+.site-header {
+  width: 100%;
+  background-color: #f8f9fa;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+
 }
 
 .login-container {
@@ -157,4 +166,29 @@ nav a {
 
 nav a:hover {
   opacity: 0.8;
+}
+
+/* DASHBOARD.HTML */
+.dashboard-layout {
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding-top: 40px;
+}
+
+.dashboard-layout nav {
+  display: flex;
+  /* flex-direction: column; */
+  align-items: center;
+  gap: 12px;
+}
+
+#message {
+  text-align: center;
+}
+
+#logoutBtn {
+  width: fit-content;
 }
