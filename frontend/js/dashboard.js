@@ -17,7 +17,7 @@ async function checkLogin() {
         return;
     }
 
-    document.getElementById("message").textContent = `Welcome, ${data.user.username}`;
+    //document.getElementById("message").textContent = `Welcome, ${data.user.username}`;
 }
 
 checkLogin();

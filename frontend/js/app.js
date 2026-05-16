@@ -1,5 +1,5 @@
 // Find elements from HTML
-const message = document.getElementById("message");
+//const message = document.getElementById("message");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const registerBtn = document.getElementById("registerBtn");
@@ -23,11 +23,11 @@ async function sendAuthRequest(endpoint) {
     const data = await response.json();
 
     if (!response.ok) {
-        message.textContent = data.message || "Something went wrong";
+        //message.textContent = data.message || "Something went wrong";
         return false;
     }
 
-    message.textContent = data.message;
+    //message.textContent = data.message;
     return true;
 }
 
