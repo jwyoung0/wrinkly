@@ -34,13 +34,13 @@ async function sendAuthRequest(endpoint) {
 
 // Add click behavior
 registerBtn.addEventListener("click", function () {
-    sendAuthRequest("/api/register");
+    sendAuthRequest("/api/auth/register");
 });
 
 loginBtn.addEventListener("click", async function () {
-    const success = await sendAuthRequest("/api/login");
+    const success = await sendAuthRequest("/api/auth/login");
 
     if (success) {
-        window.location.href = "pages/dashboard.html";
+        window.location.href = "/dashboard";
     }
 });
