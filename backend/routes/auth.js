@@ -9,6 +9,7 @@ router.post("/register", async function (req, res) {
         const { username, password } = req.body;
 
         if (!username || !password) {
+            console.log("registration error: missing username and/or password");
             return res.status(400).json({
                 message: "Username and password are required"
             });
