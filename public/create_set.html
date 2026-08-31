@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Create Flashcard Set</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.title.label }} {{ form.title() }}<br>
+    {{ form.submit() }}
+</form>
+{% endblock %}
+
+<h2>{{ 'Edit Set' if edit else 'Create Flashcard Set' }}</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.title.label }} {{ form.title() }}<br>
+    <input type="submit" value="{{ 'Update' if edit else 'Create Set' }}">
+</form>
+
+<h2>{{ 'Edit Question' if edit else 'Add Question to ' + set.title }}</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.question_text.label }} {{ form.question_text() }}<br>
+    {{ form.option_a.label }} {{ form.option_a() }}<br>
+    {{ form.option_b.label }} {{ form.option_b() }}<br>
+    {{ form.option_c.label }} {{ form.option_c() }}<br>
+    {{ form.option_d.label }} {{ form.option_d() }}<br>
+    {{ form.correct_option.label }} {{ form.correct_option() }}<br>
+    <input type="submit" value="{{ 'Update Question' if edit else 'Add Question' }}">
+</form>

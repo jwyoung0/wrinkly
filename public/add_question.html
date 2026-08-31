@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Add Question to {{ set.title }}</h2>
+
+{% if message %}
+<p class="success-message">{{ message }}</p>
+{% endif %}
+
+<form method="POST" class="question-form">
+    {{ form.hidden_tag() }}
+
+    <!-- Question textarea -->
+    <div class="form-group">
+        {{ form.question_text.label }}
+        {{ form.question_text(rows=4, class="form-control", id="question_text") }}
+    </div>
+
+    <!-- Options stacked nicely -->
+    <div class="form-group">
+        {{ form.option_a.label }}
+        {{ form.option_a(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.option_b.label }}
+        {{ form.option_b(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.option_c.label }}
+        {{ form.option_c(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.option_d.label }}
+        {{ form.option_d(class="form-control") }}
+    </div>
+
+    <!-- Correct option dropdown -->
+    <div class="form-group">
+        {{ form.correct_option.label }}
+        {{ form.correct_option(class="form-control") }}
+    </div>
+
+    <!-- Continue adding checkbox -->
+    <div class="form-group">
+        {{ form.continue_adding() }}
+        {{ form.continue_adding.label }}
+    </div>
+
+    <!-- Submit button -->
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+
+<script>
+    window.onload = function () {
+        const questionBox = document.getElementById("question_text");
+        if (questionBox) {
+            questionBox.focus();
+        }
+    };
+</script>
+{% endblock %}

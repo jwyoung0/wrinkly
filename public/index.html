@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <title>Study Sets</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home">Study Sets</a>
+    <nav><a href="#home">My sets</a><a href="#new">Create set</a><a href="#settings">Settings</a></nav>
+  </header>
+  <main id="app" class="container" aria-live="polite"></main>
+  <template id="question-form-template">
+    <form class="question-form stack">
+      <label>Question<textarea name="questionText" required rows="3" maxlength="1000"></textarea></label>
+      <div class="option-grid">
+        <label>A<input name="optionA" required maxlength="500"></label><label>B<input name="optionB" required maxlength="500"></label>
+        <label>C<input name="optionC" required maxlength="500"></label><label>D<input name="optionD" required maxlength="500"></label>
+      </div>
+      <label>Correct answer<select name="correctOption" required><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></label>
+      <label>Explanation <span class="muted">(optional)</span><textarea name="explanation" rows="2" maxlength="1500"></textarea></label>
+      <div><button class="btn primary" type="submit">Save question</button> <button class="btn secondary cancel-question" type="button">Cancel</button></div>
+    </form>
+  </template>
+  <script src="/app.js" defer></script>
+</body>
+</html>

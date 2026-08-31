@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcards App</title>
+    <!-- Optional: link to CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Flashcards App</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a> |
+            <a href="{{ url_for('create_set') }}">Create Set</a> |
+            <a href="{{ url_for('settings') }}">Settings</a>
+        </nav>
+        <hr>
+    </header>
+
+    <!-- Main content container -->
+    <div class="container" style="max-width: 700px; margin: 0 auto; padding: 20px;">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <hr>
+        <p>&copy; 2025 Flashcards App</p>
+    </footer>
+</body>
+</html>
