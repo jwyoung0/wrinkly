@@ -11,10 +11,19 @@ async function api(path, options = {}) {
 }
 function notice(message, kind = "error") { return `<p class="notice ${kind}">${escapeHtml(message)}</p>`; }
 function route() { return location.hash.slice(1) || "home"; }
-function go(path) { location.hash = path; }
+function go(path) {
+  if (route() === path) render();
+  else location.hash = path;
+}
 function questionForm(question = {}) {
   const form = template.content.firstElementChild.cloneNode(true);
   Object.entries(question).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value || ""; });
+  form.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
   return form;
 }
 
@@ -35,8 +44,8 @@ function newSet() {
   };
 }
 
-async function setView(id) {
-  app.innerHTML = "<p>Loading set…</p>";
+async function setView(id, keepEditorInView = false) {
+  if (!keepEditorInView) app.innerHTML = "<p>Loading set…</p>";
   try {
     const [sets, questions] = await Promise.all([api("/sets"), api(`/sets/${id}/questions`)]);
     const set = sets.find((item) => item.id === Number(id));
@@ -44,7 +53,8 @@ async function setView(id) {
     app.innerHTML = `<a href="#home">← All sets</a><section class="page-heading"><div><h1>${escapeHtml(set.title)}</h1><p class="muted">${questions.length} question${questions.length === 1 ? "" : "s"}</p></div><div class="actions"><a class="btn primary ${questions.length ? "" : "disabled"}" href="${questions.length ? `#quiz/${id}` : "#set/" + id}">Take quiz</a><button class="btn danger" data-delete-set="${id}">Delete set</button></div></section><form id="rename-form" class="inline-form"><label>Rename set<input name="title" value="${escapeHtml(set.title)}" maxlength="120" required></label><button class="btn secondary">Save</button></form><section><h2>Add a question</h2><div id="editor"></div></section><section><h2>Questions</h2><div class="question-list">${questions.length ? questions.map((q, index) => `<article class="card question"><div><strong>${index + 1}. ${escapeHtml(q.questionText)}</strong><ol type="A"><li>${escapeHtml(q.optionA)}</li><li>${escapeHtml(q.optionB)}</li><li>${escapeHtml(q.optionC)}</li><li>${escapeHtml(q.optionD)}</li></ol><p class="correct">Correct: ${q.correctOption}${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</p></div><div class="actions"><button class="btn secondary" data-edit-question="${q.id}">Edit</button><button class="btn danger" data-delete-question="${q.id}">Delete</button></div></article>`).join("") : "<p class=\"muted\">Add your first question above.</p>"}</div></section>`;
     const editor = document.querySelector("#editor");
     const form = questionForm(); editor.append(form);
-    form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/sets/${id}/questions`, "POST"); go(`set/${id}`); };
+    form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/sets/${id}/questions`, "POST"); await setView(id, true); };
+    if (keepEditorInView) editor.scrollIntoView({ block: "start" });
     document.querySelector("#rename-form").onsubmit = async (event) => { event.preventDefault(); await api(`/sets/${id}`, { method: "PUT", body: JSON.stringify({ title: event.target.title.value }) }); go(`set/${id}`); };
     app.onclick = async (event) => {
       const button = event.target.closest("button"); if (!button) return;
@@ -64,7 +74,7 @@ function editQuestion(questionId, question, setId) {
   const editor = document.querySelector("#editor"); editor.innerHTML = "<h3>Edit question</h3>";
   const form = questionForm(question); editor.append(form); form.scrollIntoView({ behavior: "smooth", block: "start" });
   form.querySelector(".cancel-question").onclick = () => go(`set/${setId}`);
-  form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/questions/${questionId}`, "PUT"); go(`set/${setId}`); };
+  form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/questions/${questionId}`, "PUT"); await setView(setId, true); };
 }
 
 async function quiz(id) {
