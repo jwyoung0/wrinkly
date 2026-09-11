@@ -1,7 +1,29 @@
 const app = document.querySelector("#app");
 const template = document.querySelector("#question-form-template");
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+const formatText = (value = "") => {
+  // Split on ```lang\n ... ``` blocks. Capture the optional language.
+  // Parts alternate: [text, lang, code, text, lang, code, ...]
+  const parts = String(value).split(/```(\w*)\r?\n([\s\S]*?)```/g);
 
+  let html = "";
+  for (let i = 0; i < parts.length; i += 3) {
+    // 1. Regular text segment — escape, then turn newlines into breaks
+    const text = parts[i] ?? "";
+    html += escapeHtml(text).replace(/\r?\n/g, "<br>");
+
+    // 2. Code segment (may be undefined on the last iteration)
+    if (i + 2 < parts.length) {
+      const lang = parts[i + 1] || "";
+      const code = parts[i + 2] || "";
+      html +=
+        `<pre class="code-block"><code` +
+        (lang ? ` class="language-${escapeHtml(lang)}"` : "") +
+        `>${escapeHtml(code.replace(/\n$/, ""))}</code></pre>`;
+    }
+  }
+  return html;
+};
 async function api(path, options = {}) {
   const response = await fetch(`/api${path}`, { headers: { "Content-Type": "application/json" }, ...options });
   if (response.status === 204) return null;
@@ -50,7 +72,7 @@ async function setView(id, keepEditorInView = false) {
     const [sets, questions] = await Promise.all([api("/sets"), api(`/sets/${id}/questions`)]);
     const set = sets.find((item) => item.id === Number(id));
     if (!set) throw new Error("Set not found.");
-    app.innerHTML = `<a href="#home">← All sets</a><section class="page-heading"><div><h1>${escapeHtml(set.title)}</h1><p class="muted">${questions.length} question${questions.length === 1 ? "" : "s"}</p></div><div class="actions"><a class="btn primary ${questions.length ? "" : "disabled"}" href="${questions.length ? `#quiz/${id}` : "#set/" + id}">Take quiz</a><button class="btn danger" data-delete-set="${id}">Delete set</button></div></section><form id="rename-form" class="inline-form"><label>Rename set<input name="title" value="${escapeHtml(set.title)}" maxlength="120" required></label><button class="btn secondary">Save</button></form><section><h2>Add a question</h2><div id="editor"></div></section><section><h2>Questions</h2><div class="question-list">${questions.length ? questions.map((q, index) => `<article class="card question"><div><strong>${index + 1}. ${escapeHtml(q.questionText)}</strong><ol type="A"><li>${escapeHtml(q.optionA)}</li><li>${escapeHtml(q.optionB)}</li><li>${escapeHtml(q.optionC)}</li><li>${escapeHtml(q.optionD)}</li></ol><p class="correct">Correct: ${q.correctOption}${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</p></div><div class="actions"><button class="btn secondary" data-edit-question="${q.id}">Edit</button><button class="btn danger" data-delete-question="${q.id}">Delete</button></div></article>`).join("") : "<p class=\"muted\">Add your first question above.</p>"}</div></section>`;
+    app.innerHTML = `<a href="#home">← All sets</a><section class="page-heading"><div><h1>${escapeHtml(set.title)}</h1><p class="muted">${questions.length} question${questions.length === 1 ? "" : "s"}</p></div><div class="actions"><a class="btn primary ${questions.length ? "" : "disabled"}" href="${questions.length ? `#quiz/${id}` : "#set/" + id}">Take quiz</a><button class="btn danger" data-delete-set="${id}">Delete set</button></div></section><form id="rename-form" class="inline-form"><label>Rename set<input name="title" value="${escapeHtml(set.title)}" maxlength="120" required></label><button class="btn secondary">Save</button></form><section><h2>Add a question</h2><div id="editor"></div></section><section><h2>Questions</h2><div class="question-list">${questions.length ? questions.map((q, index) => `<article class="card question"><div><strong>${index + 1}. ${formatText(q.questionText)}</strong><ol type="A"><li>${formatText(q.optionA)}</li><li>${formatText(q.optionB)}</li><li>${formatText(q.optionC)}</li><li>${formatText(q.optionD)}</li></ol><p class="correct">Correct: ${q.correctOption}${q.explanation ? ` — ${formatText(q.explanation)}` : ""}</p></div><div class="actions"><button class="btn secondary" data-edit-question="${q.id}">Edit</button><button class="btn danger" data-delete-question="${q.id}">Delete</button></div></article>`).join("") : "<p class=\"muted\">Add your first question above.</p>"}</div></section>`;
     const editor = document.querySelector("#editor");
     const form = questionForm(); editor.append(form);
     form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/sets/${id}/questions`, "POST"); await setView(id, true); };
@@ -84,7 +106,7 @@ async function quiz(id) {
     const count = Math.min(Number(localStorage.quizQuestionCount || 10), set?.questionCount || 0);
     const questions = await api(`/sets/${id}/quiz?limit=${count}`);
     if (!questions.length) return go(`set/${id}`);
-    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((q, index) => `<fieldset class="card"><legend>${index + 1}. ${escapeHtml(q.questionText)}</legend>${["A", "B", "C", "D"].map((letter) => `<label class="answer"><input required type="radio" name="q-${q.id}" value="${letter}"> <strong>${letter}.</strong> ${escapeHtml(q[`option${letter}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
+    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((q, index) => `<fieldset class="card"><legend>${index + 1}. ${formatText(q.questionText)}</legend>${["A", "B", "C", "D"].map((letter) => `<label class="answer"><input required type="radio" name="q-${q.id}" value="${letter}"> <strong>${letter}.</strong> ${formatText(q[`option${letter}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
     document.querySelector("#quiz-form").onsubmit = async (event) => {
       event.preventDefault(); const form = new FormData(event.target);
       const answers = questions.map((q) => ({ questionId: q.id, selectedOption: form.get(`q-${q.id}`) }));
@@ -93,7 +115,7 @@ async function quiz(id) {
   } catch (error) { app.innerHTML = notice(error.message); }
 }
 function results(data, id, title) {
-  app.innerHTML = `<a href="#set/${id}">← Back to set</a><section class="score-card"><p class="eyebrow">${escapeHtml(title)}</p><h1>${data.score} / ${data.results.length}</h1><p>${Math.round((data.score / data.results.length) * 100)}% correct</p><a class="btn primary" href="#quiz/${id}">Try again</a></section><section><h2>Review</h2>${data.results.map((r, index) => `<article class="card result ${r.isCorrect ? "correct-result" : "incorrect-result"}"><strong>${index + 1}. ${escapeHtml(r.questionText)}</strong><p>${r.isCorrect ? "Correct" : `Your answer: ${r.selectedOption || "No answer"}`}</p>${!r.isCorrect ? `<p>Correct answer: ${r.correctOption}. ${escapeHtml(r[`option${r.correctOption}`])}</p>` : ""}${r.explanation ? `<p class="muted">${escapeHtml(r.explanation)}</p>` : ""}</article>`).join("")}</section>`;
+  app.innerHTML = `<a href="#set/${id}">← Back to set</a><section class="score-card"><p class="eyebrow">${escapeHtml(title)}</p><h1>${data.score} / ${data.results.length}</h1><p>${Math.round((data.score / data.results.length) * 100)}% correct</p><a class="btn primary" href="#quiz/${id}">Try again</a></section><section><h2>Review</h2>${data.results.map((r, index) => `<article class="card result ${r.isCorrect ? "correct-result" : "incorrect-result"}"><strong>${index + 1}. ${formatText(r.questionText)}</strong><p>${r.isCorrect ? "Correct" : `Your answer: ${r.selectedOption || "No answer"}`}</p>${!r.isCorrect ? `<p>Correct answer: ${r.correctOption}. ${formatText(r[`option${r.correctOption}`])}</p>` : ""}${r.explanation ? `<p class="muted">${formatText(r.explanation)}</p>` : ""}</article>`).join("")}</section>`;
 }
 function settings() {
   const count = Number(localStorage.quizQuestionCount || 10);
