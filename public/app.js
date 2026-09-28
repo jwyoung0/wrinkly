@@ -68,23 +68,70 @@ function newSet() {
 
 async function setView(id, keepEditorInView = false) {
   if (!keepEditorInView) app.innerHTML = "<p>Loading set…</p>";
+
   try {
-    const [sets, questions] = await Promise.all([api("/sets"), api(`/sets/${id}/questions`)]);
-    const set = sets.find((item) => item.id === Number(id));
+    const [sets, questions] = await Promise.all([
+      api("/sets"),
+      api(`/sets/${id}/questions`)
+    ]);
+    const set = sets.find((item) => Number(item.id) === Number(id));
     if (!set) throw new Error("Set not found.");
-    app.innerHTML = `<a href="#home">← All sets</a><section class="page-heading"><div><h1>${escapeHtml(set.title)}</h1><p class="muted">${questions.length} question${questions.length === 1 ? "" : "s"}</p></div><div class="actions"><a class="btn primary ${questions.length ? "" : "disabled"}" href="${questions.length ? `#quiz/${id}` : "#set/" + id}">Take quiz</a><button class="btn danger" data-delete-set="${id}">Delete set</button></div></section><form id="rename-form" class="inline-form"><label>Rename set<input name="title" value="${escapeHtml(set.title)}" maxlength="120" required></label><button class="btn secondary">Save</button></form><section><h2>Add a question</h2><div id="editor"></div></section><section><h2>Questions</h2><div class="question-list">${questions.length ? questions.map((q, index) => `<article class="card question"><div><strong>${index + 1}. ${formatText(q.questionText)}</strong><ol type="A"><li>${formatText(q.optionA)}</li><li>${formatText(q.optionB)}</li><li>${formatText(q.optionC)}</li><li>${formatText(q.optionD)}</li></ol><p class="correct">Correct: ${q.correctOption}${q.explanation ? ` — ${formatText(q.explanation)}` : ""}</p></div><div class="actions"><button class="btn secondary" data-edit-question="${q.id}">Edit</button><button class="btn danger" data-delete-question="${q.id}">Delete</button></div></article>`).join("") : "<p class=\"muted\">Add your first question above.</p>"}</div></section>`;
+
+    app.innerHTML = `<a href="#home">← All sets</a><section class="page-heading"><div><h1>${escapeHtml(set.title)}</h1><p class="muted">${questions.length} question${questions.length === 1 ? "" : "s"}</p></div><div class="actions"><a class="btn primary ${questions.length ? "" : "disabled"}" href="${questions.length ? `#quiz/${id}` : `#set/${id}`}">Take quiz</a><button class="btn danger" data-delete-set="${id}">Delete set</button></div></section><form id="rename-form" class="inline-form"><label>Rename set<input name="title" value="${escapeHtml(set.title)}" maxlength="120" required></label><button class="btn secondary">Save</button></form><section><h2>Add a question</h2><div id="editor"></div></section><section><h2>Questions</h2><div class="question-list">${questions.length ? questions.map((q, index) => `<article class="card question"><div><strong>${index + 1}. ${formatText(q.questionText)}</strong><ol type="A"><li>${formatText(q.optionA)}</li><li>${formatText(q.optionB)}</li><li>${formatText(q.optionC)}</li><li>${formatText(q.optionD)}</li></ol><p class="correct">Correct: ${escapeHtml(q.correctOption)}${q.explanation ? ` — ${formatText(q.explanation)}` : ""}</p></div><div class="actions"><button class="btn secondary" data-edit-question="${q.id}">Edit</button><button class="btn danger" data-delete-question="${q.id}">Delete</button></div></article>`).join("") : "<p class=\"muted\">No questions yet. Add one above to get started.</p>"}</div></section>`;
+
     const editor = document.querySelector("#editor");
-    const form = questionForm(); editor.append(form);
-    form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/sets/${id}/questions`, "POST"); await setView(id, true); };
-    if (keepEditorInView) editor.scrollIntoView({ block: "start" });
-    document.querySelector("#rename-form").onsubmit = async (event) => { event.preventDefault(); await api(`/sets/${id}`, { method: "PUT", body: JSON.stringify({ title: event.target.title.value }) }); go(`set/${id}`); };
-    app.onclick = async (event) => {
-      const button = event.target.closest("button"); if (!button) return;
-      if (button.dataset.deleteSet && confirm("Delete this set and every question in it?")) { await api(`/sets/${id}`, { method: "DELETE" }); go("home"); }
-      if (button.dataset.deleteQuestion && confirm("Delete this question?")) { await api(`/questions/${button.dataset.deleteQuestion}`, { method: "DELETE" }); go(`set/${id}`); }
-      if (button.dataset.editQuestion) editQuestion(button.dataset.editQuestion, questions.find((q) => q.id === Number(button.dataset.editQuestion)), id);
+    const form = questionForm();
+    editor.append(form);
+
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      try {
+        await saveQuestion(event.target, `/sets/${id}/questions`, "POST");
+        await setView(id, true);
+      } catch {
+        // saveQuestion already displays the error notice.
+      }
     };
-  } catch (error) { app.innerHTML = notice(error.message); }
+
+    if (keepEditorInView) editor.scrollIntoView({ block: "start" });
+
+    document.querySelector("#rename-form").onsubmit = async (event) => {
+      event.preventDefault();
+      try {
+        await api(`/sets/${id}`, {
+          method: "PUT",
+          body: JSON.stringify({ title: event.target.title.value })
+        });
+        await setView(id);
+      } catch (error) {
+        event.target.insertAdjacentHTML("beforebegin", notice(error.message));
+      }
+    };
+
+    app.onclick = async (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      try {
+        if (button.dataset.deleteSet && confirm("Delete this set and every question in it?")) {
+          await api(`/sets/${id}`, { method: "DELETE" });
+          go("home");
+        } else if (button.dataset.deleteQuestion && confirm("Delete this question?")) {
+          await api(`/questions/${button.dataset.deleteQuestion}`, { method: "DELETE" });
+          await setView(id);
+        } else if (button.dataset.editQuestion) {
+          const question = questions.find(
+            (item) => Number(item.id) === Number(button.dataset.editQuestion)
+          );
+          if (question) editQuestion(question.id, question, id);
+        }
+      } catch (error) {
+        app.insertAdjacentHTML("afterbegin", notice(error.message));
+      }
+    };
+  } catch (error) {
+    app.innerHTML = notice(error.message);
+  }
 }
 
 async function saveQuestion(form, path, method) {
@@ -93,29 +140,102 @@ async function saveQuestion(form, path, method) {
   catch (error) { form.insertAdjacentHTML("beforebegin", notice(error.message)); throw error; }
 }
 function editQuestion(questionId, question, setId) {
-  const editor = document.querySelector("#editor"); editor.innerHTML = "<h3>Edit question</h3>";
-  const form = questionForm(question); editor.append(form); form.scrollIntoView({ behavior: "smooth", block: "start" });
+  const editor = document.querySelector("#editor");
+  editor.innerHTML = "<h3>Edit question</h3>";
+
+  const form = questionForm(question);
+  editor.append(form);
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+
   form.querySelector(".cancel-question").onclick = () => go(`set/${setId}`);
-  form.onsubmit = async (event) => { event.preventDefault(); await saveQuestion(event.target, `/questions/${questionId}`, "PUT"); await setView(setId, true); };
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    try {
+      await saveQuestion(event.target, `/questions/${questionId}`, "PUT");
+      await setView(setId, true);
+    } catch {
+      // saveQuestion already displays the error notice.
+    }
+  };
+}
+
+function shuffle(items) {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 async function quiz(id) {
   app.innerHTML = "<p>Preparing quiz…</p>";
   try {
-    const sets = await api("/sets"); const set = sets.find((item) => item.id === Number(id));
-    const count = Math.min(Number(localStorage.quizQuestionCount || 10), set?.questionCount || 0);
+    const sets = await api("/sets");
+    const set = sets.find((item) => item.id === Number(id));
+    if (!set) throw new Error("Set not found.");
+
+    const questionCount = Number(set.questionCount);
+    if (!Number.isFinite(questionCount) || questionCount < 1) {
+      return go(`set/${id}`);
+    }
+
+    const requestedCount = Number(localStorage.quizQuestionCount || 10);
+    const count = Math.min(
+      Math.max(Number.isFinite(requestedCount) ? Math.floor(requestedCount) : 10, 1),
+      100,
+      questionCount
+    );
     const questions = await api(`/sets/${id}/quiz?limit=${count}`);
     if (!questions.length) return go(`set/${id}`);
-    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((q, index) => `<fieldset class="card"><legend>${index + 1}. ${formatText(q.questionText)}</legend>${["A", "B", "C", "D"].map((letter) => `<label class="answer"><input required type="radio" name="q-${q.id}" value="${letter}"> <strong>${letter}.</strong> ${formatText(q[`option${letter}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
+
+    const optionOrders = new Map(
+      questions.map((q) => [q.id, shuffle(["A", "B", "C", "D"])])
+    );
+    const displayLetters = ["A", "B", "C", "D"];
+
+    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((q, index) => `<fieldset class="card"><legend>${index + 1}. ${formatText(q.questionText)}</legend>${optionOrders.get(q.id).map((optionKey, optionIndex) => `<label class="answer"><input required type="radio" name="q-${q.id}" value="${optionKey}"> <strong>${displayLetters[optionIndex]}.</strong> ${formatText(q[`option${optionKey}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
+
     document.querySelector("#quiz-form").onsubmit = async (event) => {
-      event.preventDefault(); const form = new FormData(event.target);
-      const answers = questions.map((q) => ({ questionId: q.id, selectedOption: form.get(`q-${q.id}`) }));
-      try { results(await api(`/sets/${id}/quiz-results`, { method: "POST", body: JSON.stringify({ answers }) }), id, set.title); } catch (error) { app.insertAdjacentHTML("afterbegin", notice(error.message)); }
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const answers = questions.map((q) => ({
+        questionId: q.id,
+        selectedOption: form.get(`q-${q.id}`)
+      }));
+
+      try {
+        results(
+          await api(`/sets/${id}/quiz-results`, {
+            method: "POST",
+            body: JSON.stringify({ answers })
+          }),
+          id,
+          set.title,
+          optionOrders
+        );
+      } catch (error) {
+        app.insertAdjacentHTML("afterbegin", notice(error.message));
+      }
     };
-  } catch (error) { app.innerHTML = notice(error.message); }
+  } catch (error) {
+    app.innerHTML = notice(error.message);
+  }
 }
-function results(data, id, title) {
-  app.innerHTML = `<a href="#set/${id}">← Back to set</a><section class="score-card"><p class="eyebrow">${escapeHtml(title)}</p><h1>${data.score} / ${data.results.length}</h1><p>${Math.round((data.score / data.results.length) * 100)}% correct</p><a class="btn primary" href="#quiz/${id}">Try again</a></section><section><h2>Review</h2>${data.results.map((r, index) => `<article class="card result ${r.isCorrect ? "correct-result" : "incorrect-result"}"><strong>${index + 1}. ${formatText(r.questionText)}</strong><p>${r.isCorrect ? "Correct" : `Your answer: ${r.selectedOption || "No answer"}`}</p>${!r.isCorrect ? `<p>Correct answer: ${r.correctOption}. ${formatText(r[`option${r.correctOption}`])}</p>` : ""}${r.explanation ? `<p class="muted">${formatText(r.explanation)}</p>` : ""}</article>`).join("")}</section>`;
+
+function results(data, id, title, optionOrders) {
+  const displayLetter = (questionId, optionKey) => {
+    const order = optionOrders.get(questionId) || ["A", "B", "C", "D"];
+    const index = order.indexOf(optionKey);
+    return index < 0 ? null : String.fromCharCode(65 + index);
+  };
+
+  app.innerHTML = `<a href="#set/${id}">← Back to set</a><section class="score-card"><p class="eyebrow">${escapeHtml(title)}</p><h1>${data.score} / ${data.results.length}</h1><p>${Math.round((data.score / data.results.length) * 100)}% correct</p><a class="btn primary" href="#quiz/${id}">Try again</a></section><section><h2>Review</h2>${data.results.map((r, index) => {
+    const selectedLetter = displayLetter(r.id, r.selectedOption);
+    const correctLetter = displayLetter(r.id, r.correctOption);
+
+    return `<article class="card result ${r.isCorrect ? "correct-result" : "incorrect-result"}"><strong>${index + 1}. ${formatText(r.questionText)}</strong><p>${r.isCorrect ? "Correct" : `Your answer: ${selectedLetter || "No answer"}`}</p>${!r.isCorrect ? `<p>Correct answer: ${correctLetter}. ${formatText(r[`option${r.correctOption}`])}</p>` : ""}${r.explanation ? `<p class="muted">${formatText(r.explanation)}</p>` : ""}</article>`;
+  }).join("")}</section>`;
 }
 function settings() {
   const count = Number(localStorage.quizQuestionCount || 10);
