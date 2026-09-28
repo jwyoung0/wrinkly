@@ -32,7 +32,7 @@ export async function quiz(app, id) {
       questions.map((question) => [question.id, shuffle(["A", "B", "C", "D"])])
     );
 
-    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((question, index) => `<fieldset class="card"><legend>${index + 1}. ${formatText(question.questionText)}</legend>${optionOrders.get(question.id).map((key, optionIndex) => `<label class="answer"><input required type="radio" name="q-${question.id}" value="${key}"> <strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${formatText(question[`option${key}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
+    app.innerHTML = `<a href="#set/${id}">← Back to set</a><h1>${escapeHtml(set.title)} quiz</h1><p class="muted">${questions.length} randomly selected question${questions.length === 1 ? "" : "s"}. Answer every question, then submit.</p><form id="quiz-form">${questions.map((question, index) => `<fieldset class="card quiz-question"><legend>${index + 1}. ${formatText(question.questionText)}</legend>${optionOrders.get(question.id).map((key, optionIndex) => `<label class="answer"><input required type="radio" name="q-${question.id}" value="${key}"> <strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${formatText(question[`option${key}`])}</label>`).join("")}</fieldset>`).join("")}<button class="btn primary">Submit quiz</button></form>`;
 
     document.querySelector("#quiz-form").onsubmit = async (event) => {
       event.preventDefault();
